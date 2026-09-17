@@ -1,3 +1,4 @@
+import logging
 import uuid
 from typing import Any
 
@@ -17,6 +18,8 @@ from app.worker.retry import retry_after_failure
 from app.workflows.outline import build_outline_workflow, run_outline_workflow
 
 __all__ = ["create_outline_generator", "generate_outline"]
+
+logger = logging.getLogger(__name__)
 
 
 async def generate_outline(ctx: dict[str, Any], project_id: str, job_id: str) -> None:
@@ -44,6 +47,19 @@ async def generate_outline(ctx: dict[str, Any], project_id: str, job_id: str) ->
             expected_revision,
         )
     except Exception as error:
+        # Persist a safe user-facing message, but retain the exception type in
+        # server logs so provider or output-contract failures remain diagnosable.
+        causes = []
+        current: BaseException | None = error
+        while current is not None and len(causes) < 4:
+            causes.append(type(current).__name__)
+            current = current.__cause__
+        logger.warning(
+            "Outline generation failed for project %s [chain=%s]: %s",
+            project_uuid,
+            " -> ".join(causes),
+            error,
+        )
         retry = retry_after_failure(ctx, error)
         if retry is not None:
             await _progress(project_uuid, 30, "模型调用失败，正在重试")

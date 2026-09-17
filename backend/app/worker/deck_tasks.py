@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import uuid
 from typing import Any
 
@@ -8,13 +9,15 @@ from sqlalchemy.orm import selectinload
 
 from app.core.config import get_settings
 from app.core.db import async_session_factory
+from app.domain.content import BulletsBlock, TextBlock
 from app.domain.content import Slide as SlideContent
+from app.domain.flex_presets import BlockRef, seed_layout_for_blocks
 from app.domain.outline import OutlinePage
 from app.domain.page_rhythm import allows_callout, skeleton_hint
 from app.domain.validation import StructureIssue
 from app.images.pipeline import ImagePipeline, create_image_pipeline
 from app.llm.base import OutlineSourceSection, SlideGenerationInput, SlideGenerator
-from app.llm.errors import LLMNotConfiguredError
+from app.llm.errors import InvalidSlideOutputError, LLMNotConfiguredError
 from app.models.project import Project
 from app.models.slide import Slide
 from app.schemas.deck import DeckEvent
@@ -28,7 +31,10 @@ from app.services.deck import (
 )
 from app.services.slide_images import resolve_slide_images
 from app.worker.context import create_slide_generator
+from app.worker.retry import retry_after_failure
 from app.workflows.slide import build_slide_workflow, run_slide_workflow
+
+logger = logging.getLogger(__name__)
 
 
 async def generate_deck(ctx: dict[str, Any], project_id: str, slide_ids: list[str]) -> None:
@@ -61,7 +67,7 @@ async def generate_deck(ctx: dict[str, Any], project_id: str, slide_ids: list[st
             if cancelled or await is_cancelled(project_uuid):
                 cancelled = True
                 return
-            await _generate_one(project_uuid, slide_id, context, workflow, pipeline)
+            await _generate_one(ctx, project_uuid, slide_id, context, workflow, pipeline)
 
     try:
         await asyncio.gather(*(run_one(slide_id) for slide_id in targets))
@@ -72,6 +78,7 @@ async def generate_deck(ctx: dict[str, Any], project_id: str, slide_ids: list[st
 
 
 async def _generate_one(
+    task_ctx: dict[str, Any],
     project_id: uuid.UUID,
     slide_id: uuid.UUID,
     context: "DeckContext",
@@ -115,6 +122,7 @@ async def _generate_one(
         allow_callout=allows_callout(page.position),
     )
 
+    completion_message = f"第 {page.position} 页已完成"
     try:
         slide, issues = await run_slide_workflow(
             workflow,
@@ -124,9 +132,41 @@ async def _generate_one(
             theme_overrides=context.theme_overrides,
         )
     except Exception as error:
-        await _save_failed(slide_id, _public_error(error))
-        await _publish(project_id, "slide_failed", f"第 {page.position} 页生成失败", slide_id, page)
-        return
+        logger.warning(
+            "Slide generation failed for project %s, slide %s, page %s [chain=%s]: %s",
+            project_id,
+            slide_id,
+            page.position,
+            " -> ".join(_error_chain(error)),
+            error,
+        )
+        retry = retry_after_failure(task_ctx, error)
+        if retry is not None:
+            await _publish(
+                project_id,
+                "slide_started",
+                f"第 {page.position} 页生成不稳定，正在自动重试",
+                slide_id,
+                page,
+            )
+            raise retry from error
+        # 只有模型已响应、但严格 JSON 结构校验失败时才降级。网络、鉴权和图片
+        # 服务问题仍保持失败状态，避免把真实故障伪装成一张可用页面。
+        if _has_error_type(error, InvalidSlideOutputError) and context.layout_mode == "flex":
+            slide, issues = _fallback_slide_from_outline(slide_id, payload)
+            completion_message = f"第 {page.position} 页已按基础版式完成"
+            logger.info(
+                "Using outline fallback for project %s, slide %s, page %s",
+                project_id,
+                slide_id,
+                page.position,
+            )
+        else:
+            await _save_failed(slide_id, _public_error(error))
+            await _publish(
+                project_id, "slide_failed", f"第 {page.position} 页生成失败", slide_id, page
+            )
+            return
 
     slide = await resolve_slide_images(
         pipeline,
@@ -137,7 +177,45 @@ async def _generate_one(
         slide=slide,
     )
     await _save_ready(slide_id, slide, issues, intended_mode=context.layout_mode)
-    await _publish(project_id, "slide_completed", f"第 {page.position} 页已完成", slide_id, page)
+    await _publish(project_id, "slide_completed", completion_message, slide_id, page)
+
+
+def _fallback_slide_from_outline(
+    slide_id: uuid.UUID,
+    payload: SlideGenerationInput,
+) -> tuple[SlideContent, list[StructureIssue]]:
+    """在结构化模型输出持续不合格时，用已确认大纲生成一张可编辑的 flex 页面。"""
+    prefix = str(slide_id)
+    points = [point.strip() for point in payload.key_points if point.strip()]
+    if not points:
+        points = [payload.objective.strip() or "请补充本页要点"]
+    blocks = [
+        TextBlock(id=f"{prefix}-title", slot_id="title", text=payload.page_title),
+        TextBlock(id=f"{prefix}-lead", slot_id="lead", text=payload.objective),
+        BulletsBlock(id=f"{prefix}-body", slot_id="body", items=points[:5]),
+    ]
+    layout_tree = seed_layout_for_blocks(
+        [BlockRef(id=block.id, type=block.type) for block in blocks],
+        page_role=payload.page_role,
+        key_points=points,
+    )
+    slide = SlideContent(
+        id=prefix,
+        layout_id=payload.layout_id,
+        layout_mode="flex",
+        layout_tree=layout_tree,
+        blocks=blocks,
+        speaker_notes="本页根据已确认大纲自动整理，可在编辑器中补充细节。",
+    )
+    return slide, [
+        StructureIssue(
+            severity="warning",
+            slide_id=prefix,
+            slot_id=None,
+            code="outline_fallback",
+            message="模型页面格式异常，已根据大纲生成基础版式",
+        )
+    ]
 
 
 class DeckContext:
@@ -363,5 +441,31 @@ async def _finish(project_id: uuid.UUID, *, cancelled: bool) -> None:
 def _public_error(error: Exception) -> str:
     if isinstance(error, LLMNotConfiguredError):
         return str(error)
+    if _has_error_type(error, InvalidSlideOutputError):
+        return "模型返回的页面格式不符合要求，请单独重试"
+    if _has_error_type(error, httpx.TimeoutException | httpx.ConnectError):
+        return "模型服务连接超时，请稍后重试"
     # 不把供应商响应或输入材料落库，避免错误信息成为敏感数据旁路
     return "页面生成失败，请重试"
+
+
+def _error_chain(error: BaseException, *, limit: int = 4) -> list[str]:
+    """记录异常类型而非供应商响应，保留可诊断性且不泄露输入材料。"""
+    chain: list[str] = []
+    current: BaseException | None = error
+    while current is not None and len(chain) < limit:
+        chain.append(type(current).__name__)
+        current = current.__cause__
+    return chain
+
+
+def _has_error_type(
+    error: BaseException,
+    types: type[BaseException] | tuple[type[BaseException], ...],
+) -> bool:
+    current: BaseException | None = error
+    while current is not None:
+        if isinstance(current, types):
+            return True
+        current = current.__cause__
+    return False

@@ -1,7 +1,9 @@
 import uuid
 from collections.abc import AsyncGenerator
 
+import httpx
 import pytest
+from arq import Retry
 from httpx import ASGITransport, AsyncClient
 from redis.exceptions import RedisError
 from sqlalchemy import select
@@ -33,7 +35,8 @@ from app.main import app
 from app.models.project import Project
 from app.models.slide import Slide
 from app.services.deck import clear_cancel, request_cancel
-from app.worker.deck_tasks import generate_deck
+from app.worker.deck_tasks import _public_error, generate_deck
+from app.worker.retry import MAX_TRIES
 
 
 class FakeQueue:
@@ -366,6 +369,31 @@ async def test_worker_flex_generation_persists_layout_tree(
 
 
 @pytest.mark.asyncio
+async def test_worker_falls_back_to_outline_after_invalid_flex_output(
+    client: AsyncClient, queue: FakeQueue
+) -> None:
+    headers = await _sign_up(client)
+    project = await _confirmed_project(client, headers, layout_mode="flex")
+    await client.post(f"/api/v1/projects/{project['id']}/deck/generate", json={}, headers=headers)
+    slide_ids = queue.calls[0][0][2]
+
+    await generate_deck(
+        {"slide_generator": FakeSlideGenerator(fail_positions={2}), "job_try": MAX_TRIES},
+        project["id"],
+        slide_ids,
+    )
+
+    deck = (await client.get(f"/api/v1/projects/{project['id']}/deck", headers=headers)).json()
+    assert deck["status"] == "ready"
+    recovered = next(slide for slide in deck["slides"] if slide["position"] == 2)
+    assert recovered["status"] == "ready"
+    assert recovered["layout_mode"] == "flex"
+    assert recovered["layout_tree"] is not None
+    assert [block["type"] for block in recovered["blocks"]] == ["text", "text", "bullets"]
+    assert recovered["issues"][0]["code"] == "outline_fallback"
+
+
+@pytest.mark.asyncio
 async def test_flex_project_heals_fixed_slides_on_generate(
     client: AsyncClient, queue: FakeQueue
 ) -> None:
@@ -412,7 +440,7 @@ async def test_generate_resumes_and_retries_failed_slide(
     slide_ids = queue.calls[0][0][2]
 
     await generate_deck(
-        {"slide_generator": FakeSlideGenerator(fail_positions={2})},
+        {"slide_generator": FakeSlideGenerator(fail_positions={2}), "job_try": MAX_TRIES},
         project["id"],
         slide_ids,
     )
@@ -438,6 +466,32 @@ async def test_generate_resumes_and_retries_failed_slide(
 
     deck = (await client.get(f"/api/v1/projects/{project['id']}/deck", headers=headers)).json()
     assert deck["status"] == "ready"
+
+
+@pytest.mark.asyncio
+async def test_worker_retries_transient_slide_failure(
+    client: AsyncClient, queue: FakeQueue
+) -> None:
+    headers = await _sign_up(client)
+    project = await _confirmed_project(client, headers)
+    await client.post(f"/api/v1/projects/{project['id']}/deck/generate", json={}, headers=headers)
+    slide_ids = queue.calls[0][0][2]
+
+    with pytest.raises(Retry):
+        await generate_deck(
+            {"slide_generator": FakeSlideGenerator(fail_positions={2}), "job_try": 1},
+            project["id"],
+            slide_ids,
+        )
+
+
+def test_slide_failure_messages_are_safe_and_actionable() -> None:
+    assert _public_error(InvalidSlideOutputError("raw provider response")) == (
+        "模型返回的页面格式不符合要求，请单独重试"
+    )
+    assert _public_error(httpx.ConnectError("private endpoint")) == (
+        "模型服务连接超时，请稍后重试"
+    )
 
 
 @pytest.mark.asyncio
