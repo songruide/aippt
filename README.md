@@ -6,7 +6,7 @@
 
 ## 一、项目介绍
 
-这是一套以 **AI 工程化 + 文档渲染 + 异步任务编排** 为核心的全栈项目教程，基于 FastAPI + LangChain + LangGraph + python-pptx + React 开发。用户只需要输入一句主题、粘贴一段长文本，或者上传 PDF、Word、Markdown、TXT 文档，就能先得到一份可修改的大纲，再并发生成完整页面，最终导出原生可编辑的 PPTX 文件。
+这是一套以 **AI 工程化 + 文档渲染 + 异步任务编排** 为核心的全栈项目教程，基于 FastAPI + LangChain + LangGraph + python-pptx + Vue 3 开发。用户只需要输入一句主题、粘贴一段长文本，或者上传 PDF、Word、Markdown、TXT 文档，就能先得到一份可修改的大纲，再并发生成完整页面，最终导出原生可编辑的 PPTX 文件。
 
 ![](https://pic.yupi.icu/pine/image-20260820135911354.png)
 
@@ -90,7 +90,7 @@ AI 全栈项目，技术丰富，学完后会在 AI 工程化、异步编排、�
 
 该项目功能完整，涵盖用户项目管理、输入解析、大纲生成、页面生成、在线编辑、主题布局、图片管线、导出质量检查 8 大模块。
 
-本项目采用前后端分离 + 异步 Worker 架构。前端是 React + TypeScript SPA，后端是 FastAPI + ARQ Worker 服务，通过 REST API + SSE 通信。
+本项目采用前后端分离 + 异步 Worker 架构。前端是 Vue 3 + TypeScript SPA，后端是 FastAPI + ARQ Worker 服务，通过 REST API + SSE 通信。
 
 后端内部按照 API 层、领域层、工作流层、渲染层分层，耗时的 AI 任务通过 ARQ 异步队列和 Redis pub/sub 来管理。内容、布局、主题三种数据通过 `shared/` 目录下的 JSON 文件前后端物理共享。
 
@@ -144,7 +144,7 @@ make migrate   # Alembic 数据库迁移，自动建表
 ```bash
 make dev-api      # 终端一：API http://127.0.0.1:39800
 make dev-worker   # 终端二：Worker（不启动则生成卡 0%）
-make dev-web      # 终端三：前端 http://localhost:39173
+make dev-web      # 终端三：前端 http://localhost:39174
 ```
 
 ### 5. 下载度量字体（可选）

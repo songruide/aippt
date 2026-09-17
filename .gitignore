@@ -13,7 +13,9 @@ Desktop.ini
 
 # 编辑器 / IDE
 .idea/
-.vscode/
+.vscode/*
+!.vscode/
+!.vscode/settings.json
 *.swp
 *.swo
 *~
@@ -117,3 +119,20 @@ backend/fonts/*
 # 其他
 *.local
 .history/
+
+# 本地 AI 工具数据（项目记忆 / 临时验证脚本），仅存于本机
+.workbuddy-ai/
+
+# 验证与审计产物（截图、报告），不属于源码
+outputs/
+
+# 离线依赖包与本地环境引导脚本（含本机绝对路径，不入库）
+wheelhouse/
+*.whl
+bootstrap-deps.ps1
+
+# 迁移期临时验证台（不属于交付物）
+frontend-vue/dist-verify/
+frontend-vue/playground.html
+frontend-vue/playground-pages.html
+frontend-vue/playground/

@@ -1,0 +1,8 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv",
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/backend"
+  ],
+  "typescript.tsdk": "${workspaceFolder}/frontend-vue/node_modules/typescript/lib",
+  "java.import.maven.enabled": true
+}
