@@ -9,7 +9,7 @@ interface Options<T> {
   active: MaybeRefOrGetter<boolean>
   /** 收到这些事件类型后停止重连：任务已经有终态，再连只会空转 */
   terminalTypes: readonly string[]
-  /** setup 只执行一次，闭包引用稳定，无需像 React 那样用 ref 中转 */
+  /** setup 只执行一次，闭包引用稳定，无需额外用 ref 中转 */
   onEvent?: (event: T) => void
 }
 

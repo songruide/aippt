@@ -11,7 +11,7 @@ export default defineConfig({
     },
   },
   server: {
-    // 与 React 版错开端口，同一后端可同时跑两套前端做对照验证
+    // 固定端口，避免端口漂移后代理与后端 CORS 配置对不上
     host: '127.0.0.1',
     port: 39174,
     strictPort: true,

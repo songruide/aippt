@@ -190,8 +190,8 @@ watch(
     window.addEventListener('keydown', onKeyDown)
     onCleanup(() => window.removeEventListener('keydown', onKeyDown))
   },
-  // immediate：React 的 useEffect 在挂载时就会注册监听；首屏页若依赖后续变化才注册，
-  // 撤销/重做与删除键会静默失效（无报错），必须补 immediate。
+  // immediate 必须补：监听要在挂载时就注册。首屏页的依赖之后不再变化，
+  // 而 watch 默认只在变化时执行——漏了 immediate，撤销/重做与删除键会静默失效（无报错）。
   { flush: 'post', immediate: true },
 )
 

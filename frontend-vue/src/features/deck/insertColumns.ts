@@ -7,7 +7,7 @@ export type InsertAnchor = { parentId: string; index: number }
 
 /**
  * 一次拖入 N 列：先串行新建 N 个文本块，再把它们包成列容器。
- * 从 React 版 BlockInsertRail.tsx 抽出：纯编排逻辑，与框架无关。
+ * 纯编排逻辑，与框架无关，可单独复用。
  */
 export async function insertColumnsAt(
   projectId: string,

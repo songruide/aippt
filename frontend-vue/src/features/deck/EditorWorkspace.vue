@@ -56,15 +56,15 @@ const scrollRequest = ref<{ id: string; nonce: number } | null>(null)
 const selection = ref<BlockSelection | null>(null)
 const rail = ref<RailTab | null>(null)
 const relayoutOpen = ref(false)
-// 初始缩放必须与 React 一致：React 是 useState(1) → ZOOM_STEPS[1] = 0.8
+// 初始缩放取 ZOOM_STEPS[1] = 0.8：编辑器首屏默认 80%，改这个下标会让首屏缩放跳变
 const zoomIndex = ref(1)
 const presenting = ref(false)
 const exporting = ref(false)
 const removingId = ref<string | null>(null)
 
 const slideIdsKey = computed(() => slides.value.map((slide) => slide.id).join('|'))
-// immediate：React 的 useEffect 挂载即跑，deck 命中缓存时 slideIdsKey 首帧就已确定，
-// 缺 immediate 会导致 activeId 一直为 null（没有当前页）。
+// immediate 必须补：deck 命中缓存时 slideIdsKey 首帧就已确定、之后不再变，
+// 而 watch 默认只在变化时执行，漏了会让 activeId 一直为 null（没有当前页）。
 watch(
   slideIdsKey,
   (key) => {

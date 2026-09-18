@@ -36,7 +36,7 @@ const RAIL_TABS: Array<{ tab: RailTab; label: string; icon: Component }> = [
       v-if="props.tab"
       class="scrollbar-slim w-80 overflow-y-auto border-l border-line bg-surface px-4 py-4"
     >
-      <!-- 面板内的请求按页缓存（slide.id 在 setup 时固化），换页必须重建，行为与 React 一致 -->
+      <!-- 面板内的请求按页缓存（slide.id 在 setup 时固化），换页必须重建，否则请求会打到上一页 -->
       <AiEditPanel
         v-if="props.tab === 'ai'"
         :key="props.slide.id"

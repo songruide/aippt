@@ -91,7 +91,7 @@ export function useFlexPointerSession({
 }) {
   const rootRef = ref<HTMLDivElement | null>(null)
   // setup 只跑一次，回调闭包天然稳定；toValue 每次读取都拿当前值，
-  // 等价于 React 版里那些 *Ref.current = props 的回写。
+  // 因此不必像依赖快照那样把最新 props 回写到 ref 里。
   const slideNow = () => toValue(slide)
   const treeNow = () => toValue(tree)
   const busyNow = () => toValue(busy)
@@ -189,7 +189,7 @@ export function useFlexPointerSession({
   )
 
   // Vue 的状态赋值是同步的：拖拽 handlers 直接读写 drag.value，
-  // 不再需要 React 版为绕开异步 setState 而设的 dragRef 写穿技巧。
+  // 不需要再额外维护一个同步副本 ref。
   watch(
     dragging,
     (isDragging, _prev, onCleanup) => {

@@ -90,7 +90,7 @@ function sameStructure(a: StructureSnap, b: StructureSnap): boolean {
  * 同一页的块保存必须串行：每次成功 revision +1，并发必然 409。
  * 内容、样式、灵活布局结构共用队列；同时维护本页撤销/重做栈。
  *
- * 队列与撤销栈沿用 React 版的普通可变对象（不进响应式系统）：
+ * 队列与撤销栈用普通可变对象，刻意不进响应式系统：
  * 它们的变化通过 historyTick / status 间接反映到视图。
  */
 export function useSlideSaveQueue(projectId: string, slideId: string) {
@@ -112,7 +112,7 @@ export function useSlideSaveQueue(projectId: string, slideId: string) {
   })
 
   // 撤销栈按页隔离：本 composable 在 SlidePage 内按页实例化，
-  // 换页即新实例，栈随实例自然重建（对应 React 版的 slideId 变更清空）。
+  // 换页即新实例，栈随实例自然重建，不需要额外监听 slideId 变化去清空。
 
   const readSlide = (): DeckSlide | undefined => {
     const deck = queryClient.getQueryData<Deck>(deckKey(projectId))

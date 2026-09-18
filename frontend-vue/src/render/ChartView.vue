@@ -20,7 +20,7 @@ const props = defineProps<{
  * 幻灯片其余部分靠 cqw 等比缩放，而图表库的字号、描边、边距都是像素数，
  * 不会跟着容器变。因此这里量出实际像素宽度换算成缩放比，把图表画在与 PPTX
  * 相同的 pt 坐标系里再整体缩放——两端的构图比例因此严格一致。
- * （React 版用 Recharts，Vue 版换 ECharts，坐标系与主题映射保持同一套。）
+ * （图表用 ECharts 绘制，坐标系与主题映射与 PPTX 导出保持同一套。）
  */
 
 const hostRef = ref<HTMLDivElement | null>(null)

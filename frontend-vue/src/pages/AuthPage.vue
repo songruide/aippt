@@ -113,8 +113,8 @@ function switchMode() {
       </div>
 
       <p class="mt-6 text-center text-sm text-ink-muted">
-        <!-- 提示语与按钮之间不能有换行：JSX 会剥掉这里的空白，Vue 会保留成一个空格，
-             多出的空格会让「还没有账号？注册一个」中间多一道缝，与 React 版不一致 -->
+        <!-- 提示语与按钮之间不能有换行：模板编译器会把换行保留成一个空格，
+             多出的空格会让「还没有账号？注册一个」中间多一道缝 -->
         {{ copy.switchHint }}<button
           type="button"
           class="ml-1 font-medium text-accent underline-offset-4 transition-colors hover:underline"

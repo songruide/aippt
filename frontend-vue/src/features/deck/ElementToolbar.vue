@@ -43,7 +43,7 @@ const props = withDefaults(
     block: Block
     theme: Theme
     disabled?: boolean
-    /** flex 模式删除内容块（对应 React 版是否传入 onDelete） */
+    /** flex 模式删除内容块 */
     deleteEnabled?: boolean
     /** 表格结构 / 图表数据等整包内容提交（对应 onCommitContent） */
     contentEnabled?: boolean
