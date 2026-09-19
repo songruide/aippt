@@ -38,6 +38,8 @@
 │   └── scripts/             字体下载、回归脚本
 ├── java_backend/       Spring Boot 3.5 / Java 21 参考实现（与 Python 后端对齐）
 ├── frontend-vue/       Vue 3 前端（Vite 8 + TS）
+│   ├── README.md            前端说明：结构、技术栈、关键状态层、运行与验证
+│   ├── CONVENTIONS.md       组件契约与写法规范
 │   └── src/
 │       ├── pages/           列表页 / 创作页 / 项目详情 / 登录注册
 │       ├── features/        auth、projects、outline、deck（编辑器主体）
@@ -173,6 +175,7 @@ make gen-api   # 导出 backend 的 OpenAPI schema → frontend-vue/src/api/sche
 ## 开发约定
 
 - **内容 / 布局 / 主题三分离**：`shared/` 下的 JSON 前后端物理共享，Web 预览与 PPTX 导出同源渲染。
-- **前端样式统一走全局 Tailwind**，组件内不写 `<style>` 块。
+- **前端样式统一走全局 Tailwind**，组件内不写 `<style>` 块；组件契约与写法细则见
+  [`frontend-vue/CONVENTIONS.md`](./frontend-vue/CONVENTIONS.md)。
 - **后端行宽 100**（Ruff 配置），提交前跑 `make lint`。
 - 端口约定：API `39800`、前端 dev `39174`、PostgreSQL `39432`、Redis `39379`、生产 Nginx `39880`。
