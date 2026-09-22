@@ -17,6 +17,7 @@
 | 数据存储 | PostgreSQL 16；对象存储支持本地盘 / 腾讯云 COS 双驱动 |
 | 文档处理 | python-pptx（导出）、python-docx / pdfplumber / markdown-it-py（解析）、FontTools（字形级溢出检测） |
 | 鉴权 | PyJWT + pwdlib[argon2] |
+| Java 参考实现 | Spring Boot 3.5.9 + Java 21 + MyBatis-Plus 3.5 + LangChain4j / LangGraph4j |
 | 工具链 | uv（Python）、npm + vue-tsc + vitest + oxlint（前端） |
 
 ## 目录结构
@@ -148,6 +149,23 @@ make lint         # Ruff 静态检查
 cd frontend-vue && npm run test    # 前端 vitest
 cd frontend-vue && npm run build   # vue-tsc 类型检查 + 生产构建
 ```
+
+> `make test` 中走接口与数据库的用例需要 PostgreSQL / Redis 已启动（即先执行 `make up`）；
+> 纯领域逻辑用例（渲染、排版求解、文档解析、质量检查等）不依赖数据库，可直接跑。
+
+### 7. Java 参考实现（可选）
+
+`java_backend/` 是与 Python 后端接口对齐的 Spring Boot 实现，共用同一套 PostgreSQL / Redis
+与 `shared/` 下的布局主题定义。
+
+前置：**JDK 21** 与 Maven（仓库未附带 Maven Wrapper，需自行安装）。
+
+```bash
+make dev-java-api      # Java API（会先执行 Alembic 迁移）
+make dev-java-worker   # Java Worker
+```
+
+它与 Python 后端监听同一端口（`39800`），同一时间只启动其中一套即可。
 
 ## 部署
 
