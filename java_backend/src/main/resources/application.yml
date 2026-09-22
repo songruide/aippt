@@ -40,7 +40,7 @@ mybatis-plus:
 app:
   env: ${APP_ENV:development}
   database-url: ${DATABASE_URL:postgresql+asyncpg://aippt:aippt@localhost:39432/aippt}
-  cors-origins: ${CORS_ORIGINS:["http://localhost:39173","http://127.0.0.1:39173"]}
+  cors-origins: ${CORS_ORIGINS:["http://localhost:39174","http://127.0.0.1:39174"]}
   jwt-secret: ${JWT_SECRET:dev-only-insecure-secret-change-me}
   jwt-algorithm: ${JWT_ALGORITHM:HS256}
   jwt-expire-minutes: ${JWT_EXPIRE_MINUTES:10080}

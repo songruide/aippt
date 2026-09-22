@@ -1,7 +1,7 @@
 /**
  * 前后端 grow 归一化对齐检查：shared/flex-fixtures/normalize-grow-cases.json
  * 的期望值由后端 normalize(clamp_title_grow=False) 生成，两端任一改动都会红。
- * 运行：cd frontend && npx --yes tsx --tsconfig tsconfig.app.json scripts/flex-normalize-parity.mts
+ * 运行：cd frontend-vue && npx --yes tsx --tsconfig tsconfig.app.json scripts/flex-normalize-parity.mts
  */
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'

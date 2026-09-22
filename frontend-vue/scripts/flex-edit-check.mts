@@ -1,6 +1,6 @@
 /**
  * 编辑交互自检：行内单元格高度互不联动、八向手柄都能取到分隔线、像素级微调。
- * 运行：cd frontend && npx --yes tsx --tsconfig tsconfig.app.json scripts/flex-edit-check.mts
+ * 运行：cd frontend-vue && npx --yes tsx --tsconfig tsconfig.app.json scripts/flex-edit-check.mts
  * （需要 tsconfig.app.json 才能解析 @/ 别名）
  */
 import assert from 'node:assert/strict'

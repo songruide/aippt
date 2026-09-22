@@ -1,6 +1,6 @@
 /**
  * 前后端 flex solver 对齐检查：遍历 shared/flex-presets/golden-*.json。
- * 运行：cd frontend && npx --yes tsx scripts/flex-parity.mts
+ * 运行：cd frontend-vue && npx --yes tsx --tsconfig tsconfig.app.json scripts/flex-parity.mts
  */
 import assert from 'node:assert/strict'
 import { readdirSync, readFileSync } from 'node:fs'

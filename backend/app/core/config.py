@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     # PostgreSQL / Redis / 其他开发服务抢占端口
     database_url: str = "postgresql+asyncpg://aippt:aippt@localhost:39432/aippt"
     redis_url: str = "redis://localhost:39379/0"
-    cors_origins: list[str] = ["http://localhost:39173"]
+    cors_origins: list[str] = ["http://localhost:39174"]
     llm_api_key: str = ""
     llm_base_url: str = "https://api.deepseek.com"
     llm_model: str = "deepseek-v4-flash"

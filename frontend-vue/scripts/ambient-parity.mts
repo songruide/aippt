@@ -1,7 +1,7 @@
 /**
  * 前后端主题氛围层对齐检查：shared/ambient-fixtures/theme-cases.json
  * 的期望值由 backend/scripts/dump_ambient_fixture.py 生成，两端任一改动都会红。
- * 运行：cd frontend && npx --yes tsx --tsconfig tsconfig.app.json scripts/ambient-parity.mts
+ * 运行：cd frontend-vue && npx --yes tsx --tsconfig tsconfig.app.json scripts/ambient-parity.mts
  */
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'

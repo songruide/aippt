@@ -21,7 +21,7 @@ public class AppProperties {
 
     private String env = "development";
     private String databaseUrl = "postgresql+asyncpg://aippt:aippt@localhost:39432/aippt";
-    private String corsOrigins = "[\"http://localhost:39173\"]";
+    private String corsOrigins = "[\"http://localhost:39174\"]";
     private String jwtSecret = "dev-only-insecure-secret-change-me";
     private String jwtAlgorithm = "HS256";
     private int jwtExpireMinutes = 60 * 24 * 7;
@@ -70,7 +70,7 @@ public class AppProperties {
             }
         }
         if (origins.isEmpty()) {
-            origins.add("http://localhost:39173");
+            origins.add("http://localhost:39174");
         }
         List<String> expanded = new ArrayList<>(origins);
         for (String origin : origins) {

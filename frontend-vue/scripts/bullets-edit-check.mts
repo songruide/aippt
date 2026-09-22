@@ -1,6 +1,6 @@
 /**
  * 列表增删要点：merge / sanitize 自检
- * 运行：cd frontend && npx --yes tsx --tsconfig tsconfig.app.json scripts/bullets-edit-check.mts
+ * 运行：cd frontend-vue && npx --yes tsx --tsconfig tsconfig.app.json scripts/bullets-edit-check.mts
  */
 import assert from 'node:assert/strict'
 import {
