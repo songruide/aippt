@@ -34,7 +34,7 @@
 │   │   ├── ingest/          PDF / Word / Markdown / TXT 解析
 │   │   ├── worker/          ARQ 任务与重试
 │   │   └── services/        业务服务层
-│   ├── tests/               pytest（44 个测试文件）
+│   ├── tests/               pytest（42 个测试文件）
 │   └── scripts/             字体下载、回归脚本
 ├── java_backend/       Spring Boot 3.5 / Java 21 参考实现（与 Python 后端对齐）
 ├── frontend-vue/       Vue 3 前端（Vite 8 + TS）

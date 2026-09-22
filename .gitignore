@@ -131,7 +131,7 @@ wheelhouse/
 *.whl
 bootstrap-deps.ps1
 
-# 迁移期临时验证台（不属于交付物）
+# 本地验证台产物（不属于交付物）
 frontend-vue/dist-verify/
 frontend-vue/playground.html
 frontend-vue/playground-pages.html
