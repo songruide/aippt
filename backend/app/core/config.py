@@ -22,6 +22,14 @@ class Settings(BaseSettings):
     # 遇到复杂主题时可通过环境变量开启，不把供应商参数写死在工作流里。
     llm_thinking_enabled: bool = False
     llm_timeout_seconds: float = 60
+
+    # LangSmith 链路追踪。LangChain 只认进程环境变量，而本项目用 .env 管配置，
+    # 因此这里先落到 Settings，再由 app.core.tracing 显式同步到 os.environ。
+    # 未配置 api_key 时即使打开开关也不会生效，避免半配置状态静默失败。
+    langsmith_tracing: bool = False
+    langsmith_api_key: str = ""
+    langsmith_project: str = "aippt-vue"
+    langsmith_endpoint: str = "https://api.smith.langchain.com"
     # 单份 PPT 同时生成的页数。调高能缩短总时长，但容易触发供应商限流，
     # 且失败会成片出现；3 是延迟与稳定性之间比较稳妥的取值。
     slide_concurrency: int = 3

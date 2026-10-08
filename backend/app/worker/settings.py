@@ -1,10 +1,14 @@
 from arq.connections import RedisSettings
 
 from app.core.config import get_settings
+from app.core.tracing import configure_tracing
 from app.worker.context import shutdown, startup
 from app.worker.deck_tasks import generate_deck
 from app.worker.retry import MAX_TRIES
 from app.worker.tasks import generate_outline
+
+# Worker 是独立进程，模型调用主要发生在这里，需要单独开启追踪
+configure_tracing()
 
 
 class WorkerSettings:

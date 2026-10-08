@@ -113,6 +113,16 @@ cp backend/.env.example backend/.env
 
 > 第一次跑通只需要填 `LLM_API_KEY` 一个值，其余保持默认即可。
 
+链路追踪（可选）：在 `backend/.env` 中填写 LangSmith 配置即可，模型调用会自动上报。
+
+```dotenv
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY=
+LANGSMITH_PROJECT=aippt-vue
+```
+
+LangChain 只读进程环境变量，项目由 `app/core/tracing.py` 在 API 与 Worker 启动时把上述配置同步过去，无需额外设置系统变量。开关为 `true` 但未填 API Key 时会自动降级为关闭。访问 `api.smith.langchain.com` 需要能连通外网（国内网络通常需配置代理）。
+
 ### 3. 启动基础设施 + 安装依赖 + 建表
 
 ```bash

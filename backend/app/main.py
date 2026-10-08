@@ -7,6 +7,10 @@ from app.api.v1 import api_router
 from app.core.config import get_settings
 from app.core.queue import close_arq_pool
 from app.core.redis import close_redis, get_redis
+from app.core.tracing import configure_tracing
+
+# 在创建应用前完成，保证第一个请求就带上 trace
+configure_tracing()
 
 
 @asynccontextmanager
