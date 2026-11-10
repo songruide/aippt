@@ -186,8 +186,9 @@ async def _generate_one(
     from app.services.page_split import split_overflowing_slide
 
     try:
+        allow_split = get_settings().auto_split_overflow and not used_fallback
         extra_slide_id = (
-            None if used_fallback else await split_overflowing_slide(project_id, slide_id)
+            await split_overflowing_slide(project_id, slide_id) if allow_split else None
         )
     except Exception:
         logger.exception("自动分页失败：project=%s slide=%s", project_id, slide_id)

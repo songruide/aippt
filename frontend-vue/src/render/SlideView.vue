@@ -157,7 +157,11 @@ const renderedBlocks = computed<RenderedBlock[]>(() => {
 function blockStyle(entry: RenderedBlock): CSSProperties {
   return {
     ...rectToStyle(entry.rect),
-    overflow: reveal.value ? 'visible' : 'hidden',
+    // 编辑态内容放不下时给滚动条，让作者能看到被裁掉的文字；
+    // 预览/缩略图仍按画布裁切，避免滚动条出现在成稿里。
+    overflow: reveal.value ? 'auto' : 'hidden',
+    scrollbarWidth: 'thin',
+    overscrollBehavior: 'contain',
     outline: entry.selected
       ? `2px solid ${resolveColor(props.theme, 'accent')}`
       : '2px solid transparent',
