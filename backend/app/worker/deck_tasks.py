@@ -123,6 +123,8 @@ async def _generate_one(
     )
 
     completion_message = f"第 {page.position} 页已完成"
+    # 降级页是按大纲拼的基础版式，再拆页只会让用户更难理解，保持原样
+    used_fallback = False
     try:
         slide, issues = await run_slide_workflow(
             workflow,
@@ -155,6 +157,7 @@ async def _generate_one(
         if _has_error_type(error, InvalidSlideOutputError) and context.layout_mode == "flex":
             slide, issues = _fallback_slide_from_outline(slide_id, payload)
             completion_message = f"第 {page.position} 页已按基础版式完成"
+            used_fallback = True
             logger.info(
                 "Using outline fallback for project %s, slide %s, page %s",
                 project_id,
@@ -177,6 +180,20 @@ async def _generate_one(
         slide=slide,
     )
     await _save_ready(slide_id, slide, issues, intended_mode=context.layout_mode)
+
+    # 装不下的页直接拆成两页：PPT 没有滚动，缩字也有下限，拆页是唯一既保内容
+    # 又保版面的做法。拆页失败不能影响这一页本身，因此单独兜住异常。
+    from app.services.page_split import split_overflowing_slide
+
+    try:
+        extra_slide_id = (
+            None if used_fallback else await split_overflowing_slide(project_id, slide_id)
+        )
+    except Exception:
+        logger.exception("自动分页失败：project=%s slide=%s", project_id, slide_id)
+        extra_slide_id = None
+    if extra_slide_id is not None:
+        completion_message = f"第 {page.position} 页内容较多，已自动拆成两页"
     await _publish(project_id, "slide_completed", completion_message, slide_id, page)
 
 
