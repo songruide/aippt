@@ -9,7 +9,6 @@ Create Date: 2026-08-06 17:00:00.000000
 from collections.abc import Sequence
 
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
@@ -24,8 +23,8 @@ def upgrade() -> None:
         "projects",
         sa.Column(
             "theme_overrides",
-            postgresql.JSONB(astext_type=sa.Text()),
-            server_default=sa.text("'{}'::jsonb"),
+            sa.JSON(),
+            server_default=sa.text("(JSON_OBJECT())"),
             nullable=False,
         ),
     )

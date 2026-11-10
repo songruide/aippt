@@ -11,8 +11,8 @@ class Settings(BaseSettings):
 
     app_env: str = "development"
     # 端口统一使用 39xxx 段，避开各服务默认端口，防止与本机已装的
-    # PostgreSQL / Redis / 其他开发服务抢占端口
-    database_url: str = "postgresql+asyncpg://aippt:aippt@localhost:39432/aippt"
+    # MySQL / Redis / 其他开发服务抢占端口
+    database_url: str = "mysql+aiomysql://aippt:aippt@localhost:39432/aippt?charset=utf8mb4"
     redis_url: str = "redis://localhost:39379/0"
     cors_origins: list[str] = ["http://localhost:39174"]
     llm_api_key: str = ""

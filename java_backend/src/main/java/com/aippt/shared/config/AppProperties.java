@@ -20,7 +20,7 @@ public class AppProperties {
     private static final Pattern CORS_JSON = Pattern.compile("\"([^\"]+)\"");
 
     private String env = "development";
-    private String databaseUrl = "postgresql+asyncpg://aippt:aippt@localhost:39432/aippt";
+    private String databaseUrl = "mysql+aiomysql://aippt:aippt@localhost:39432/aippt?charset=utf8mb4";
     private String corsOrigins = "[\"http://localhost:39174\"]";
     private String jwtSecret = "dev-only-insecure-secret-change-me";
     private String jwtAlgorithm = "HS256";
@@ -94,12 +94,12 @@ public class AppProperties {
     public record ParsedJdbc(String url, String username, String password) {
         static ParsedJdbc parse(String raw) {
             String normalized = raw == null ? "" : raw
-                    .replace("postgresql+asyncpg://", "postgresql://")
-                    .replace("postgres://", "postgresql://");
-            if (!normalized.startsWith("postgresql://") && !normalized.startsWith("jdbc:postgresql://")) {
+                    .replace("mysql+aiomysql://", "mysql://")
+                    .replace("mysql+asyncmy://", "mysql://");
+            if (!normalized.startsWith("mysql://") && !normalized.startsWith("jdbc:mysql://")) {
                 throw new IllegalStateException("无法解析 DATABASE_URL");
             }
-            if (normalized.startsWith("jdbc:postgresql://")) {
+            if (normalized.startsWith("jdbc:mysql://")) {
                 URI uri = URI.create(normalized.substring("jdbc:".length()));
                 return fromUri(uri);
             }
@@ -115,10 +115,11 @@ public class AppProperties {
                 password = parts.length > 1 ? parts[1] : "";
             }
             String database = uri.getPath() == null ? "" : uri.getPath();
-            int port = uri.getPort() > 0 ? uri.getPort() : 5432;
-            String jdbc = "jdbc:postgresql://" + uri.getHost() + ":" + port + database;
+            int port = uri.getPort() > 0 ? uri.getPort() : 3306;
+            String jdbc = "jdbc:mysql://" + uri.getHost() + ":" + port + database
+                    + "?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC";
             if (uri.getQuery() != null && !uri.getQuery().isBlank()) {
-                jdbc += "?" + uri.getQuery();
+                jdbc += "&" + uri.getQuery();
             }
             return new ParsedJdbc(jdbc, user, password);
         }

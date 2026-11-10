@@ -9,7 +9,6 @@ Create Date: 2026-08-07 10:00:00.000000
 from collections.abc import Sequence
 
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
@@ -33,7 +32,7 @@ def upgrade() -> None:
         "slides",
         sa.Column(
             "layout_tree",
-            postgresql.JSONB(astext_type=sa.Text()),
+            sa.JSON(),
             nullable=True,
         ),
     )

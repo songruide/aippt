@@ -93,7 +93,7 @@ async def replace_slide_image(
         "credit": None,
         "locked": True,
     }
-    # JSONB 就地改 dict 不会被 SQLAlchemy 感知，必须赋新列表
+    # JSON 列就地改 dict 不会被 SQLAlchemy 感知，必须赋新列表
     slide.blocks = [updated if block.get("id") == block_id else block for block in slide.blocks]
     slide.revision += 1
     await session.commit()

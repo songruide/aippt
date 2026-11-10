@@ -17,7 +17,7 @@ public class DatabaseUrlProcessor implements EnvironmentPostProcessor, Ordered {
             raw = environment.getProperty("app.database-url");
         }
         if (raw == null || raw.isBlank()) {
-            raw = "postgresql+asyncpg://aippt:aippt@localhost:39432/aippt";
+            raw = "mysql+aiomysql://aippt:aippt@localhost:39432/aippt?charset=utf8mb4";
         }
         AppProperties.ParsedJdbc jdbc = AppProperties.ParsedJdbc.parse(raw);
         environment.getPropertySources().addFirst(new MapPropertySource("database-url", Map.of(

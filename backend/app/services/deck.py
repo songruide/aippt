@@ -64,7 +64,7 @@ def refresh_slide_issues(
     theme_id: str | None = None,
     theme: Theme | None = None,
 ) -> None:
-    """按当前 blocks/layout/主题重算结构与溢出告警并写回 JSONB。"""
+    """按当前 blocks/layout/主题重算结构与溢出告警并写回 JSON 列。"""
     content = to_content_slide(slide)
     slide.issues = [
         issue.model_dump()

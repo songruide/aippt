@@ -182,7 +182,7 @@ def test_unsupported_extension() -> None:
 
 
 def test_source_section_strips_null_bytes() -> None:
-    # PDF 文字层偶发夹带 \\u0000，PostgreSQL 无法写入 text/JSONB
+    # PDF 文字层偶发夹带 \\u0000，MySQL 无法写入 text/JSON
     section = SourceSection(
         level=1,
         heading="标\x00题",

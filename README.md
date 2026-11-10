@@ -14,7 +14,7 @@
 | 后端框架 | FastAPI + SQLAlchemy 2（async）+ Alembic + Pydantic v2 |
 | AI 编排 | LangChain Core + LangGraph（`with_structured_output` 结构化输出 + 自纠环工作流） |
 | 异步任务 | ARQ Worker + Redis（任务状态 + pub/sub），SSE 向前端推送进度 |
-| 数据存储 | PostgreSQL 16；对象存储支持本地盘 / 腾讯云 COS 双驱动 |
+| 数据存储 | MySQL 8.4（utf8mb4 + JSON 列）；对象存储支持本地盘 / 腾讯云 COS 双驱动 |
 | 文档处理 | python-pptx（导出）、python-docx / pdfplumber / markdown-it-py（解析）、FontTools（字形级溢出检测） |
 | 鉴权 | PyJWT + pwdlib[argon2] |
 | Java 参考实现 | Spring Boot 3.5.9 + Java 21 + MyBatis-Plus 3.5 + LangChain4j / LangGraph4j |
@@ -52,7 +52,7 @@
 │   ├── themes/              4 套主题（ivory / midnight / obsidian / scholar）
 │   ├── flex-presets/        灵活排布预设
 │   └── *-fixtures/          求解器 golden 用例
-├── docker-compose.yml         本地基础设施（PostgreSQL + Redis）
+├── docker-compose.yml         本地基础设施（MySQL + Redis）
 ├── docker-compose.prod.yml    生产编排（DB + Redis + API + Worker + Nginx）
 ├── nginx.conf                 生产反代配置
 └── Makefile                   常用命令入口
@@ -91,7 +91,7 @@ error 阻断导出，warning 提醒核对但允许继续。通过检查后用 py
 
 - Python >= 3.12、[uv](https://docs.astral.sh/uv/) >= 0.6
 - Node.js >= 20
-- Docker（跑 PostgreSQL + Redis）
+- Docker（跑 MySQL 8.4 + Redis）
 - 一个 DeepSeek API Key（必需，用于生成大纲和页面）
 
 可选：OpenAI 或阿里云百炼的 API Key（用于 AI 生图，不配则走占位图）、
@@ -126,7 +126,7 @@ LangChain 只读进程环境变量，项目由 `app/core/tracing.py` 在 API 与
 ### 3. 启动基础设施 + 安装依赖 + 建表
 
 ```bash
-make up        # 启动 PostgreSQL + Redis 容器
+make up        # 启动 MySQL + Redis 容器
 make install   # 后端 uv sync + 前端 npm install
 make migrate   # Alembic 迁移，自动建表
 ```
@@ -160,12 +160,12 @@ cd frontend-vue && npm run test    # 前端 vitest
 cd frontend-vue && npm run build   # vue-tsc 类型检查 + 生产构建
 ```
 
-> `make test` 中走接口与数据库的用例需要 PostgreSQL / Redis 已启动（即先执行 `make up`）；
+> `make test` 中走接口与数据库的用例需要 MySQL / Redis 已启动（即先执行 `make up`）；
 > 纯领域逻辑用例（渲染、排版求解、文档解析、质量检查等）不依赖数据库，可直接跑。
 
 ### 7. Java 参考实现（可选）
 
-`java_backend/` 是与 Python 后端接口对齐的 Spring Boot 实现，共用同一套 PostgreSQL / Redis
+`java_backend/` 是与 Python 后端接口对齐的 Spring Boot 实现，共用同一套 MySQL / Redis
 与 `shared/` 下的布局主题定义。
 
 前置：**JDK 21** 与 Maven（仓库未附带 Maven Wrapper，需自行安装）。
@@ -180,7 +180,7 @@ make dev-java-worker   # Java Worker
 ## 部署
 
 仓库提供了 `docker-compose.prod.yml` + `backend/Dockerfile` + `nginx.conf`，
-可在任意装了 Docker 的服务器上一键拉起 PostgreSQL + Redis + API + Worker + Nginx 五个容器。
+可在任意装了 Docker 的服务器上一键拉起 MySQL + Redis + API + Worker + Nginx 五个容器。
 
 ```bash
 cp backend/.env.example backend/.env
@@ -206,4 +206,4 @@ make gen-api   # 导出 backend 的 OpenAPI schema → frontend-vue/src/api/sche
 - **前端样式统一走全局 Tailwind**，组件内不写 `<style>` 块；组件契约与写法细则见
   [`frontend-vue/CONVENTIONS.md`](./frontend-vue/CONVENTIONS.md)。
 - **后端行宽 100**（Ruff 配置），提交前跑 `make lint`。
-- 端口约定：API `39800`、前端 dev `39174`、PostgreSQL `39432`、Redis `39379`、生产 Nginx `39880`。
+- 端口约定：API `39800`、前端 dev `39174`、MySQL `39432`、Redis `39379`、生产 Nginx `39880`。

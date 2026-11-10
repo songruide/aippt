@@ -8,7 +8,6 @@ Create Date: 2026-08-05
 from collections.abc import Sequence
 
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 
 from alembic import op
 
@@ -21,12 +20,12 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.create_table(
         "project_outlines",
-        sa.Column("id", sa.UUID(), nullable=False),
-        sa.Column("project_id", sa.UUID(), nullable=False),
+        sa.Column("id", sa.Uuid(), nullable=False),
+        sa.Column("project_id", sa.Uuid(), nullable=False),
         sa.Column("status", sa.String(length=16), nullable=False),
         sa.Column(
             "pages",
-            postgresql.JSONB(astext_type=sa.Text()),
+            sa.JSON(),
             nullable=False,
         ),
         sa.Column("revision", sa.Integer(), nullable=False),

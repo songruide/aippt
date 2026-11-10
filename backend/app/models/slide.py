@@ -3,15 +3,16 @@ from datetime import datetime
 from typing import Literal
 
 from sqlalchemy import (
+    JSON,
     DateTime,
     ForeignKey,
     Integer,
     String,
     Text,
     UniqueConstraint,
+    Uuid,
     func,
 )
-from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.db import Base
@@ -31,26 +32,26 @@ class Slide(Base):
         UniqueConstraint("project_id", "outline_page_id", name="uq_slides_project_outline_page"),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid.uuid4)
     project_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+        Uuid(as_uuid=True),
         ForeignKey("projects.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    outline_page_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False)
+    outline_page_id: Mapped[uuid.UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
 
     position: Mapped[int] = mapped_column(Integer, nullable=False)
     layout_id: Mapped[str] = mapped_column(String(50), nullable=False)
     layout_mode: Mapped[str] = mapped_column(String(16), nullable=False, default="flex")
-    layout_tree: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    layout_tree: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     # 大纲标题先行落库，页面还没生成时进度列表也能显示这一页是什么
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
 
-    blocks: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, default=list)
+    blocks: Mapped[list[dict]] = mapped_column(JSON, nullable=False, default=list)
     speaker_notes: Mapped[str | None] = mapped_column(Text)
-    issues: Mapped[list[dict]] = mapped_column(JSONB, nullable=False, default=list)
+    issues: Mapped[list[dict]] = mapped_column(JSON, nullable=False, default=list)
     error: Mapped[str | None] = mapped_column(Text)
 
     # 乐观锁：AI 局部修改与人工编辑提交时带上它，不一致即判冲突

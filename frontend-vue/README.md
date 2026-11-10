@@ -54,7 +54,7 @@ src/
 
 ```bash
 # 基础设施（在仓库根执行）
-docker compose up -d          # postgres + redis
+docker compose up -d          # mysql + redis
 
 # 后端（端口 39800）
 cd ../backend && uv run uvicorn app.main:app --port 39800

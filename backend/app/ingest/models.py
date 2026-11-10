@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field, field_validator
 
 
 def _strip_null_bytes(value: object) -> object:
-    """PostgreSQL text/JSONB 拒绝 \\u0000；PDF 抽取偶发带入，落库前必须清掉。"""
+    """MySQL text/JSON 拒绝 \\u0000；PDF 抽取偶发带入，落库前必须清掉。"""
     if isinstance(value, str):
         return value.replace("\x00", "")
     return value

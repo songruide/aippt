@@ -7,12 +7,17 @@ import java.sql.SQLException;
 
 import org.apache.ibatis.type.BaseTypeHandler;
 import org.apache.ibatis.type.JdbcType;
-import org.postgresql.util.PGobject;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+/**
+ * MySQL JSON 列与 Java 对象之间的转换。
+ *
+ * MySQL 驱动可直接把 JSON 文本按字符串写入 JSON 列，读取时也返回字符串，
+ * 因此不需要 PostgreSQL 时代的 PGobject 包装。
+ */
 public class JsonbTypeHandler<T> extends BaseTypeHandler<T> {
 
     private static final ObjectMapper MAPPER = JsonMapperHolder.MAPPER;
@@ -32,14 +37,11 @@ public class JsonbTypeHandler<T> extends BaseTypeHandler<T> {
 
     @Override
     public void setNonNullParameter(PreparedStatement ps, int i, T parameter, JdbcType jdbcType) throws SQLException {
-        PGobject json = new PGobject();
-        json.setType("jsonb");
         try {
-            json.setValue(MAPPER.writeValueAsString(parameter));
+            ps.setString(i, MAPPER.writeValueAsString(parameter));
         } catch (JsonProcessingException ex) {
-            throw new SQLException("JSONB 序列化失败", ex);
+            throw new SQLException("JSON 序列化失败", ex);
         }
-        ps.setObject(i, json);
     }
 
     @Override
@@ -64,7 +66,7 @@ public class JsonbTypeHandler<T> extends BaseTypeHandler<T> {
         try {
             return MAPPER.readValue(json, javaType);
         } catch (JsonProcessingException ex) {
-            throw new SQLException("JSONB 反序列化失败", ex);
+            throw new SQLException("JSON 反序列化失败", ex);
         }
     }
 }

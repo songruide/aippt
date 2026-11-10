@@ -1,19 +1,23 @@
 services:
-  postgres:
-    image: postgres:16-alpine
+  mysql:
+    image: mysql:8.4
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
     ports:
-      - "39432:5432"
+      - "39432:3306"
     environment:
-      POSTGRES_USER: aippt
-      POSTGRES_PASSWORD: aippt
-      POSTGRES_DB: aippt
+      MYSQL_ROOT_PASSWORD: aippt
+      MYSQL_USER: aippt
+      MYSQL_PASSWORD: aippt
+      MYSQL_DATABASE: aippt
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U aippt -d aippt"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uaippt -paippt --silent"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   redis:
     image: redis:7-alpine
@@ -26,4 +30,4 @@ services:
       retries: 5
 
 volumes:
-  postgres_data:
+  mysql_data:

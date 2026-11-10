@@ -1,17 +1,21 @@
 services:
-  postgres:
-    image: postgres:16-alpine
+  mysql:
+    image: mysql:8.4
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
     environment:
-      POSTGRES_USER: aippt
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aippt}
-      POSTGRES_DB: aippt
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-aippt}
+      MYSQL_USER: aippt
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-aippt}
+      MYSQL_DATABASE: aippt
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U aippt -d aippt"]
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uaippt -paippt --silent"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   redis:
     image: redis:7-alpine
@@ -25,12 +29,12 @@ services:
     build: ./backend
     env_file: ./backend/.env
     environment:
-      DATABASE_URL: postgresql+asyncpg://aippt:${POSTGRES_PASSWORD:-aippt}@postgres:5432/aippt
+      DATABASE_URL: mysql+aiomysql://aippt:${MYSQL_PASSWORD:-aippt}@mysql:3306/aippt?charset=utf8mb4
       REDIS_URL: redis://redis:6379/0
     volumes:
       - ./shared:/shared:ro
     depends_on:
-      postgres: { condition: service_healthy }
+      mysql: { condition: service_healthy }
       redis: { condition: service_healthy }
 
   worker:
@@ -38,12 +42,12 @@ services:
     command: ["uv", "run", "arq", "app.worker.settings.WorkerSettings"]
     env_file: ./backend/.env
     environment:
-      DATABASE_URL: postgresql+asyncpg://aippt:${POSTGRES_PASSWORD:-aippt}@postgres:5432/aippt
+      DATABASE_URL: mysql+aiomysql://aippt:${MYSQL_PASSWORD:-aippt}@mysql:3306/aippt?charset=utf8mb4
       REDIS_URL: redis://redis:6379/0
     volumes:
       - ./shared:/shared:ro
     depends_on:
-      postgres: { condition: service_healthy }
+      mysql: { condition: service_healthy }
       redis: { condition: service_healthy }
 
   nginx:
@@ -57,4 +61,4 @@ services:
       - api
 
 volumes:
-  postgres_data:
+  mysql_data:
