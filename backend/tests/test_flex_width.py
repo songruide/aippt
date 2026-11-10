@@ -148,3 +148,39 @@ def test_unknown_block_ids_do_not_crash() -> None:
     )
     fitted = fit_row_widths(tree, [], theme=THEME)
     assert {p.block_id for p in solve(fitted)} == {"ghost", "body"}
+
+
+def test_cards_borrow_width_when_only_slack_blocks_the_rebalance() -> None:
+    """需求本身排得下、加上吸附余量却超了：不能因此放弃补宽，把卡片压成竖排。
+
+    回归用例：卡片列在 38% 时每张卡只剩几十 pt，中文一行一个字。
+    """
+    bullets = BulletsBlock(
+        id="body",
+        slot_id="body",
+        items=[
+            "声明变量先定类型：基本类型保存值，引用类型保存地址；比较内容用 equals，避免误用 ==",
+            "if/switch 处理分支，for/while 处理重复；循环前明确终止条件，重点检查边界",
+            "方法把长逻辑拆成可复用单元；基本类型参数是值拷贝，对象参数拷贝的是引用地址",
+            "数组长度创建后固定，下标从 0 到 length-1；越界会抛 ArrayIndexOutOfBoundsException",
+        ],
+    )
+    cards = _cards(3)
+    tree = FlexContainer(
+        type="row",
+        id="root",
+        gap_pt=16.0,
+        ratios=[62.0, 38.0],
+        children=[
+            FlexLeaf(id="leaf-left", block_id="body", grow=1.0, text_style="bullet"),
+            FlexLeaf(id="leaf-cards", block_id="cards", grow=1.0),
+        ],
+    )
+
+    widths = _widths_pt(fit_row_widths(tree, [bullets, cards], theme=THEME))
+
+    # 卡片应该拿到更宽的一侧
+    assert widths["cards"] > widths["body"]
+    # 每张卡的内容区至少排得下 MIN_CHARS_PER_LINE 个字
+    per_card = (widths["cards"] - 2 * 16.0) / 3 - 2 * 12.0
+    assert per_card >= MIN_CHARS_PER_LINE * BODY_SIZE_PT

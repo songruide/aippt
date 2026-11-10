@@ -56,7 +56,40 @@ def fit_row_widths(
     只在生成期调用：用户手动拖出来的窄列是他自己的选择，不该被改回去。
     """
     ctx = _WidthContext(block_map={block.id: block for block in blocks}, theme=theme)
-    return normalize(_fix_container(tree, SAFE_AREA_WIDTH_PT, ctx))
+    snapped = normalize(_fix_container(tree, SAFE_AREA_WIDTH_PT, ctx))
+    if not _has_narrow_child(snapped, SAFE_AREA_WIDTH_PT, ctx):
+        return snapped
+    # 比值吸附会把刚补到的宽度吸回设计比值（60.6% → 62% 这类），
+    # 吸附后仍排不下时再修一次，这次不吸附：版面正确优先于比值美观。
+    return _fix_container(snapped, SAFE_AREA_WIDTH_PT, ctx)
+
+
+def _has_narrow_child(node: FlexContainer, avail_w_pt: float, ctx: _WidthContext) -> bool:
+    """树里是否还有排不下最小可读宽度的 row 子项。"""
+    if not node.children:
+        return False
+    if node.type != "row":
+        inner = _inset(node, avail_w_pt)
+        return any(
+            _has_narrow_child(child, inner, ctx)
+            for child in node.children
+            if isinstance(child, FlexContainer)
+        )
+
+    n = len(node.children)
+    inner_total = max(avail_w_pt - node.gap_pt * (n - 1), 1.0)
+    allocs = [inner_total * percent / 100.0 for percent in _ratio_percents(node)]
+    chrome = 2 * PRESET_INSET_PT[node.preset] if node.preset is not None else 0.0
+    if any(
+        alloc + _EPS < ctx.min_width_pt(child) + chrome
+        for alloc, child in zip(allocs, node.children, strict=True)
+    ):
+        return True
+    return any(
+        _has_narrow_child(child, _inset(node, alloc), ctx)
+        for child, alloc in zip(node.children, allocs, strict=True)
+        if isinstance(child, FlexContainer)
+    )
 
 
 class _WidthContext:
@@ -100,13 +133,16 @@ def _fix_row(
     # preset 会在每个子区域内再收一圈边，最小宽度要连这圈一起要
     chrome = 2 * PRESET_INSET_PT[node.preset] if node.preset is not None else 0.0
     slack = inner_total * _SNAP_SLACK_RATIO if n == 2 else 0.0
-    needs = [ctx.min_width_pt(child) + chrome + slack for child in node.children]
+    raw_needs = [ctx.min_width_pt(child) + chrome for child in node.children]
+    needs = [need + slack for need in raw_needs]
 
     if all(alloc + _EPS >= need for alloc, need in zip(allocs, needs, strict=True)):
         return _recurse_row(node, allocs, ctx)
 
-    if sum(needs) <= inner_total:
-        balanced = _rebalance(allocs, needs)
+    # 可行性只看真实需求：把吸附余量也算进来会让「需求本身排得下」的行
+    # 误判为排不下，转去折行又折不动，结果整行宽度原样保留、卡片被压扁。
+    if sum(raw_needs) <= inner_total:
+        balanced = _rebalance(allocs, raw_needs)
         return _recurse_row(_with_allocs(node, balanced), balanced, ctx)
 
     regrouped = _regroup(node, allocs, needs, ctx, pass_index=pass_index)

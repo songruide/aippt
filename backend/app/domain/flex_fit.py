@@ -35,9 +35,15 @@ _PREFERRED_HEIGHT_PT: dict[str, float] = {
     "callout": 48.0,
 }
 _TABLE_ROW_HEIGHT_PT = 26.0
-_CARD_BASE_HEIGHT_PT = 88.0
-_CARD_LINE_HEIGHT_PT = 22.0
 _MIN_LEAF_HEIGHT_PT = 36.0
+
+# KPI 与卡片的排版常量必须与 app/render/pptx.py、前端 BlockView 对齐：
+# 度量按渲染的实际内边距与间距算，否则算出来的高度会比画出来矮一截。
+_KPI_PAD_PT = 14.0
+_KPI_GAP_PT = 6.0
+_CARD_PAD_PT = 12.0
+_CARD_GAP_PT = 16.0
+_CARD_TITLE_GAP_PT = 6.0
 
 # 这些块可以无限吃掉富余高度：拉大反而更好看
 _ABSORBING_TYPES = frozenset({"image", "chart"})
@@ -311,18 +317,73 @@ def _leaf_height_pt(leaf: FlexLeaf, ctx: _FitContext) -> float:
         rows = 1 + len(block.rows)
         return max(_MIN_LEAF_HEIGHT_PT, rows * _TABLE_ROW_HEIGHT_PT)
     if block.type == "cards":
-        # 横排卡片高度取最高一张的标题+描述估算
-        tallest = max(
-            (
-                _CARD_BASE_HEIGHT_PT
-                + max(0, (len(item.title) + len(item.desc)) // 28) * _CARD_LINE_HEIGHT_PT
-            )
-            for item in block.items
-        )
-        return max(_MIN_LEAF_HEIGHT_PT, tallest)
+        return _cards_height_pt(leaf, block, ctx)
+    if block.type == "kpi":
+        return _kpi_height_pt(leaf, block, ctx)
     if block.type == "callout":
         return _PREFERRED_HEIGHT_PT["callout"]
     return _PREFERRED_HEIGHT_PT.get(block.type, _MIN_LEAF_HEIGHT_PT)
+
+
+def _leaf_width_pt(leaf: FlexLeaf, ctx: _FitContext) -> float:
+    return ctx.widths_pt.get(leaf.block_id, SAFE_AREA_WIDTH_PT)
+
+
+def _kpi_height_pt(leaf: FlexLeaf, block: Block, ctx: _FitContext) -> float:
+    """KPI 是三行堆叠（数值 / 标签 / 注释），高度必须按实际字号量。
+
+    固定给一个偏好高度会让「组合优先」这类长数值折行后压到下一块上。
+    """
+    width_pt = _leaf_width_pt(leaf, ctx)
+    box = resolve_box(ctx.theme, block.style)
+    pad_pt = max(box.padding_pt, _KPI_PAD_PT)
+    avail_w, _ = content_rect_pt(width_pt, CANVAS_HEIGHT_PT, padding_pt=pad_pt)
+
+    lines: list[tuple[str, str]] = [
+        (block.value, "kpi_value"),
+        (block.label, "kpi_label"),
+    ]
+    if block.note:
+        lines.append((block.note, "kpi_note"))
+
+    used = sum(
+        measure_text(
+            text,
+            style=merge_text_style(ctx.theme, name, block.style),
+            width_pt=avail_w,
+            height_pt=CANVAS_HEIGHT_PT,
+        ).height_pt
+        for text, name in lines
+    )
+    used += _KPI_GAP_PT * max(len(lines) - 1, 0)
+    chrome = 2 * TEXTBOX_MARGIN_PT + 2 * pad_pt
+    return max(_MIN_LEAF_HEIGHT_PT, used * _BREATHING + chrome)
+
+
+def _cards_height_pt(leaf: FlexLeaf, block: Block, ctx: _FitContext) -> float:
+    """卡片横排时高度取最高一张的标题+描述，宽度按均分后的单卡宽度算。"""
+    items = block.items
+    if not items:
+        return _MIN_LEAF_HEIGHT_PT
+
+    width_pt = _leaf_width_pt(leaf, ctx)
+    n = len(items)
+    card_w = max((width_pt - _CARD_GAP_PT * (n - 1)) / n, 1.0)
+    avail_w = max(card_w - 2 * _CARD_PAD_PT, 1.0)
+    title_style = merge_text_style(ctx.theme, "subtitle", block.style)
+    body_style = merge_text_style(ctx.theme, "body", block.style)
+
+    tallest = 0.0
+    for item in items:
+        title_h = measure_text(
+            item.title, style=title_style, width_pt=avail_w, height_pt=CANVAS_HEIGHT_PT
+        ).height_pt
+        desc_h = measure_text(
+            item.desc, style=body_style, width_pt=avail_w, height_pt=CANVAS_HEIGHT_PT
+        ).height_pt
+        tallest = max(tallest, title_h + _CARD_TITLE_GAP_PT + desc_h)
+
+    return max(_MIN_LEAF_HEIGHT_PT, tallest * _BREATHING + 2 * _CARD_PAD_PT)
 
 
 def _measured_height_pt(

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from app.domain.content import Block, BulletsBlock, ImageBlock, TextBlock
-from app.domain.flex_fit import fit_tree_to_content
+from app.domain.content import Block, BulletsBlock, ImageBlock, KpiBlock, TextBlock
+from app.domain.flex_fit import _FitContext, _leaf_height_pt, fit_tree_to_content
 from app.domain.flex_layout import FlexContainer, FlexLeaf
 from app.domain.flex_solve import solve
 from app.domain.geometry import CANVAS_HEIGHT_PT, SAFE_AREA
@@ -128,3 +128,21 @@ def test_unknown_block_ids_do_not_crash() -> None:
     )
     fitted = fit_tree_to_content(tree, [], theme=THEME)
     assert [p.block_id for p in solve(fitted)] == ["ghost"]
+
+
+def test_kpi_height_is_measured_not_fixed() -> None:
+    """KPI 是三行堆叠，长数值/标签折行后必须真的多占高度，否则会压到下一块。
+
+    旧的固定偏好高度是 96pt，装不下「46pt 数值 + 标签 + 注释」。
+    """
+    kpi = KpiBlock(
+        id="kpi",
+        slot_id="kpi",
+        value="组合优先",
+        label="继承：复用但别深层",
+        note="减少父类修改向下扩散，避免深层继承导致修改扩散",
+    )
+    ctx = _FitContext(block_map={"kpi": kpi}, widths_pt={"kpi": 277.0}, theme=THEME)
+    leaf = FlexLeaf(id="leaf-kpi", block_id="kpi", grow=1.0)
+
+    assert _leaf_height_pt(leaf, ctx) >= 130
